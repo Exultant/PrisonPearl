@@ -9,6 +9,7 @@ prison_musthotbar: true
 summon_damage_radius: 20
 summon_damage_ticks: 20
 summon_damage_amt: 2
+summon_repearl_range: 100
 prison_world: world_the_end
 prison_resetbed: false
 prison_motd:

@@ -30,6 +30,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import net.minecraft.server.v1_4_6.Item;
+
 public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private PrisonPearlStorage pearls;
 	private DamageLogManager damageman;
@@ -96,10 +98,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		// shamelessly swiped from bookworm, not sure why there isn't a Bukkit API for this
 		// this causes items to be stacked by their durability value
 		try {
-			Method method = net.minecraft.server.Item.class.getDeclaredMethod("a", boolean.class);
-			if (method.getReturnType() == net.minecraft.server.Item.class) {
+			Method method = Item.class.getDeclaredMethod("a", boolean.class);
+			if (method.getReturnType() == Item.class) {
 				method.setAccessible(true);
-				method.invoke(net.minecraft.server.Item.ENDER_PEARL, true);
+				method.invoke(Item.ENDER_PEARL, true);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -285,7 +287,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		
 		PrisonPearl pp = pearls.getByImprisoned(playerName); // find out if the player is imprisoned
 		if (pp != null) { // if imprisoned
-			if (!getConfig().getBoolean("prison_stealing") || player.getLocation().getWorld() == getPrisonWorld()) {// bail if prisoner stealing isn't allowed, or if the player is in prison (can't steal prisoners from prison ever)
+			if (!getConfig().getBoolean("prison_stealing") || player.getLocation().getWorld() == getPrisonWorld()
+					|| (pp.getLocation().distance(player.getLocation()) <= getConfig().getInt("summon_repearl_range"))) {// bail if prisoner stealing isn't allowed, or if the player is in prison (can't steal prisoners from prison ever)
 				// reveal location of pearl to damaging players if pearl stealing is disabled
 				for (Player damager : damageman.getDamagers(player)) {
 					damager.sendMessage(ChatColor.GREEN+"[PrisonPearl] "+pp.getImprisonedName()+" cannot be pearled here because they are already "+pp.describeLocation());
@@ -520,9 +523,28 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
             return;
         }
 
-        Player player = (Player)event.getDamager();
+        Player player = (Player)event.getEntity();
+		String playerName = player.getName();
+		Player damager = (Player)event.getDamager();
+		
+		if (combatTagManager.isCombatTagNPC(event.getEntity()))  {
+			String npcName = player.getName();
+			String realName = combatTagManager.getNPCPlayerName(player);
+			log.info("NPC: "+npcName+", Player: "+playerName);
+			if (!realName.equals("")) {
+				playerName = realName;
+			}
+		}
+		
+		PrisonPearl pp = pearls.getByImprisoned(playerName); // find out if the player is imprisoned
+		if (pp != null) { // if imprisoned 
+			if (summonman.isSummoned(player) && (pp.getLocation().distance(player.getLocation()) <= getConfig().getInt("summon_repearl_range"))) {//continue if summoned and within repearl_range
+				// reveal location of pearl to damaging player if unable to pearl summoned player
+					damager.sendMessage(ChatColor.GREEN+"[PrisonPearl] "+pp.getImprisonedName()+" cannot be pearled here because they are already "+pp.describeLocation());
+			}
+		}
 
-        if(summonman.isSummoned(player) && !summonman.getSummon(player).isCanDealDamage()) {
+        if(summonman.isSummoned(damager) && !summonman.getSummon(damager).isCanDealDamage()) {
             event.setCancelled(true);
         }
     }
