@@ -13,41 +13,47 @@ import org.bukkit.Bukkit;
 class AltsList {
 	private HashMap<String, String[]> altsHash;
 	private boolean initialised = false;
+	private boolean altBanEnabled;
 	
 	public AltsList() {
 	}
 	
 	public void load(File file) {
-		try {
-			loadAlts(file);
-			initialised = true;
-		} catch (IOException e) {
-			e.printStackTrace();
-			Bukkit.getLogger().info("Failed to load file!");
-			initialised = false;
+		altBanEnabled = Bukkit.getPluginManager().getPlugin("PrisonPearl").getConfig().getBoolean("alt_ban_enabled");
+		if(altBanEnabled){
+			try {
+				loadAlts(file);
+				initialised = true;
+			} catch (IOException e) {
+				e.printStackTrace();
+				Bukkit.getLogger().info("Failed to load file!");
+				initialised = false;
+			}
 		}
 	}
 	
 	private void loadAlts(File file) throws IOException {
-		altsHash = new HashMap<String, String[]>();
-		FileInputStream fis;
-		fis = new FileInputStream(file);
-		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-		String line;
-		while ((line = br.readLine()) != null) {
-			if (line.length() > 1) {
-				String parts[] = line.split(" ");
-				String[] newString = new String[parts.length];
-                System.arraycopy(parts, 0, newString, 0, parts.length);
-                for (String part : parts) {
-                    altsHash.put(part, newString);
-                }
+		if(altBanEnabled){
+			altsHash = new HashMap<String, String[]>();
+			FileInputStream fis;
+			fis = new FileInputStream(file);
+			BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+			String line;
+			while ((line = br.readLine()) != null) {
+				if (line.length() > 1) {
+					String parts[] = line.split(" ");
+					String[] newString = new String[parts.length];
+					System.arraycopy(parts, 0, newString, 0, parts.length);
+					for (String part : parts) {
+						altsHash.put(part, newString);
+					}
+				}
 			}
 		}
 	}
 	
 	public String[] getAltsArray(String name){
-		if (initialised && altsHash.containsKey(name)) {
+		if (altBanEnabled && initialised && altsHash.containsKey(name)) {
 			String[] names = altsHash.get(name);
 			String[] alts = new String[names.length-1];
 			for (int i = 0, j = 0; i < names.length; i++) {
@@ -62,6 +68,8 @@ class AltsList {
 	}
 	
 	public Set<String> getAllNames() {
-		return altsHash.keySet();
+		if(altBanEnabled && altsHash!=null)
+			return altsHash.keySet();
+		else return new HashMap<String, String[]>().keySet();
 	}
 }

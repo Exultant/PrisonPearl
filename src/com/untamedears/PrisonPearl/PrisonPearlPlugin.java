@@ -39,7 +39,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	private BroadcastManager broadcastman;
 	private AltsList altsList;
 	private static Logger log;
-	private static final Integer maxImprisonedAlts = 2;
+	private static Integer maxImprisonedAlts;// changed to non final
+	private boolean altBanEnabled = false;//default set to false, enable in config.yml with "alt_ban_enabled: true"
 	//private static long loginDelay = 10*60*1000;
 	private static final String kickMessage = "You have too many imprisoned alts! If you think this is an error, please message the mods on /r/civcraft";
 	//private static String delayMessage = "You cannot switch alt accounts that quickly, please wait ";
@@ -72,9 +73,23 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		broadcastman = new BroadcastManager();
 		combatTagManager = new CombatTagManager(this.getServer(), log);
 
-		loadAlts();
-		checkBanAllAlts();
-		
+//check config for alt_ban_enabled
+		if(Bukkit.getPluginManager().getPlugin("PrisonPearl").getConfig().contains("alt_ban_enabled"))
+			altBanEnabled = Bukkit.getPluginManager().getPlugin("PrisonPearl").getConfig().getBoolean("alt_ban_enabled");
+//check config for max_imprisoned_alts
+		if(Bukkit.getPluginManager().getPlugin("PrisonPearl").getConfig().contains("max_imprisoned_alts"))
+			maxImprisonedAlts = Bukkit.getPluginManager().getPlugin("PrisonPearl").getConfig().getInt("max_imprisoned_alts");
+		else
+			maxImprisonedAlts = 2;
+
+		if(altBanEnabled){
+			log.info("Prison Pearl Alt Ban: enabled  MaxImprisonedAlts: "+maxImprisonedAlts);
+			loadAlts();
+			checkBanAllAlts();
+		}
+		else
+			log.info("Prison Pearl Alt Ban: disabled");
+
 		if (Bukkit.getPluginManager().isPluginEnabled("PhysicalShop"))
 			new PhysicalShopListener(this, pearls);
 		
@@ -178,7 +193,7 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	
 	
 	private File getAltsListFile() {
-		return new File(getDataFolder(), "alts.txt");
+		return new File(getDataFolder(), "alts.txt"); 
 	}
 	
 	
@@ -188,7 +203,8 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
 		updateAttachment(player);
-		checkBan(player.getName());
+		if(altBanEnabled)
+			checkBan(player.getName());
 		
 		if (player.isDead())
 			return;
@@ -545,17 +561,32 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
     }
 	
 	public void loadAlts() {
-		if (altsList == null) {
-			altsList = new AltsList();
+		if(altBanEnabled){
+			if (altsList == null) {
+				altsList = new AltsList();
+			}
+			//Check if alts.txt exists, if it not then create it
+			try{
+				File altsListFile = getAltsListFile();
+				if(!altsListFile.exists()){
+					log.info("alts.txt does not exist, creating.");
+					altsListFile.createNewFile();
+				}
+				altsList.load(altsListFile);
+			}
+			catch(IOException e){
+				log.info(e.getMessage());
+			}
 		}
-		altsList.load(getAltsListFile());
 	}
+
 	
 	public void checkBanAllAlts() {
-		if (altsList != null) {
+		
+		if (altBanEnabled && altsList != null) {
 			Integer bannedCount = 0, unbannedCount = 0, total = 0, result;
             for (String name : altsList.getAllNames()) {
-                //log.info("checking "+name);
+log.info("checking "+name);
                 result = checkBan(name);
                 total++;
                 if (result == 2) {
@@ -596,99 +627,113 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 	}
 	
 	private int checkBan(String name) {
-		//log.info("checking "+name);
-		String[] alts = altsList.getAltsArray(name);
-		Integer pearledCount = pearls.getImprisonedCount(alts);
-		String[] imprisonedNames = pearls.getImprisonedNames(alts);
-		String names = "";
-		for (int i = 0; i < imprisonedNames.length; i++) {
-			names = names + imprisonedNames[i];
-			if (i < imprisonedNames.length-1) {
-				names = names + ", ";
+		if(altBanEnabled){
+			//log.info("checking "+name);
+			String[] alts = null;
+			if(altsList!=null)//check not null
+				alts = altsList.getAltsArray(name);
+			Integer pearledCount = pearls.getImprisonedCount(alts);
+			String[] imprisonedNames = pearls.getImprisonedNames(alts);
+			String names = "";
+			for (int i = 0; i < imprisonedNames.length; i++) {
+				names = names + imprisonedNames[i];
+				if (i < imprisonedNames.length-1) {
+					names = names + ", ";
+				}
 			}
-		}
-		if (pearledCount > maxImprisonedAlts && pearls.isImprisoned(name)) {
-			int count = 0;
-            for (String imprisonedName : imprisonedNames) {
-                if (imprisonedName.compareTo(name) < 0) {
-                    count++;
-                }
-                if (count >= maxImprisonedAlts) {
-                    banAndKick(name, pearledCount, names);
-                    return 2;
-                }
-            }
-		} else if (pearledCount.equals(maxImprisonedAlts) || (pearledCount > maxImprisonedAlts && !pearls.isImprisoned(name))) {
-			banAndKick(name,pearledCount,names);
-			return 2;
-		} else if (banned.containsKey(name) && banned.get(name)) {
-			this.getServer().getOfflinePlayer(name).setBanned(false);
-			banned.put(name, false);
-			return 1;
+			if (pearledCount > maxImprisonedAlts && pearls.isImprisoned(name)) {
+				int count = 0;
+            	for (String imprisonedName : imprisonedNames) {
+                	if (imprisonedName.compareTo(name) < 0) {
+                		count++;
+                	}
+                	if (count >= maxImprisonedAlts) {
+                    	banAndKick(name, pearledCount, names);
+                    	return 2;
+                	}
+            	}
+			} else if (pearledCount.equals(maxImprisonedAlts) || (pearledCount > maxImprisonedAlts && !pearls.isImprisoned(name))) {
+				banAndKick(name,pearledCount,names);
+				return 2;
+			} else if (banned.containsKey(name) && banned.get(name)) {
+				this.getServer().getOfflinePlayer(name).setBanned(false);
+				banned.put(name, false);
+				return 1;
+			}
+			return 0;
 		}
 		return 0;
 	}
 	
 	private void banAndKick(String name, int pearledCount, String names) {
-		this.getServer().getOfflinePlayer(name).setBanned(true);
-		Player p = this.getServer().getPlayer(name);
-		if (p != null) {
-			p.kickPlayer(kickMessage);
+		if(altBanEnabled){
+			this.getServer().getOfflinePlayer(name).setBanned(true);
+			Player p = this.getServer().getPlayer(name);
+			if (p != null) {
+				p.kickPlayer(kickMessage);
+			}
+			banned.put(name, true);
+			log.info("banning "+name+" for having "+pearledCount+" imprisoned alts: "+names);
 		}
-		banned.put(name, true);
-		log.info("banning "+name+" for having "+pearledCount+" imprisoned alts: "+names);
 	}
 	
 	private void checkBans(String[] names) {
-		Integer pearledCount;
-		String[] imprisonedNames;
-		String[] alts;
-        for (String name : names) {
-            log.info("checking " + name);
-            alts = altsList.getAltsArray(name);
-            imprisonedNames = pearls.getImprisonedNames(alts);
-            String iNames = "";
-            for (int j = 0; j < imprisonedNames.length; j++) {
-                iNames = iNames + imprisonedNames[j];
-                if (j < imprisonedNames.length - 1) {
-                    iNames = iNames + ", ";
-                }
-            }
-            pearledCount = pearls.getImprisonedCount(alts);
-            if (pearledCount >= maxImprisonedAlts) {
-                this.getServer().getOfflinePlayer(name).setBanned(true);
-                Player p = this.getServer().getPlayer(name);
-                if (p != null) {
-                    p.kickPlayer(kickMessage);
-                }
-                banned.put(name, true);
-                log.info("banning " + name + ", for having " + pearledCount + " imprisoned alts: " + iNames);
-            } else if (banned.containsKey(name) && banned.get(name).equals(Boolean.TRUE)) {
-                this.getServer().getOfflinePlayer(name).setBanned(false);
-                banned.put(name, false);
-                log.info("unbanning " + name + ", no longer has too many imprisoned alts.");
-            }
-        }
+		if(altBanEnabled){
+			Integer pearledCount;
+			String[] imprisonedNames;
+			String[] alts;
+			for (String name : names) {
+				log.info("checking " + name);
+				alts = altsList.getAltsArray(name);
+				imprisonedNames = pearls.getImprisonedNames(alts);
+				String iNames = "";
+				for (int j = 0; j < imprisonedNames.length; j++) {
+					iNames = iNames + imprisonedNames[j];
+					if (j < imprisonedNames.length - 1) {
+						iNames = iNames + ", ";
+					}
+				}
+				pearledCount = pearls.getImprisonedCount(alts);
+				if (pearledCount >= maxImprisonedAlts) {
+					this.getServer().getOfflinePlayer(name).setBanned(true);
+					Player p = this.getServer().getPlayer(name);
+					if (p != null) {
+						p.kickPlayer(kickMessage);
+					}
+					banned.put(name, true);
+					log.info("banning " + name + ", for having " + pearledCount + " imprisoned alts: " + iNames);
+				} else if (banned.containsKey(name) && banned.get(name).equals(Boolean.TRUE)) {
+					this.getServer().getOfflinePlayer(name).setBanned(false);
+					banned.put(name, false);
+					log.info("unbanning " + name + ", no longer has too many imprisoned alts.");
+				}
+			}
+		}
 	}
 	
 	public boolean isTempBanned(String name) {
-		if (banned.containsKey(name)) {
+		if (altBanEnabled && banned.containsKey(name)) {
 			return banned.get(name);
 		}
 		return false;
 	}
 	
 	public int getImprisonedCount(String name) {
-		return pearls.getImprisonedCount(altsList.getAltsArray(name));
+		if(altBanEnabled)
+			return pearls.getImprisonedCount(altsList.getAltsArray(name));
+		else
+			return 0;
 	}
 	
 	public String getImprisonedAltsString(String name) {
 		String result = "";
-		String[] alts = pearls.getImprisonedNames(altsList.getAltsArray(name));
-		for (int i = 0; i < alts.length; i++) {
-			result = result + "alts[i]";
-			if (i < alts.length - 1) {
-				result = result + ", ";
+		if(altBanEnabled){
+			String[] alts = pearls.getImprisonedNames(altsList.getAltsArray(name));
+			for (int i = 0; i < alts.length; i++) {
+				result = result + "alts[i]";
+				if (i < alts.length - 1) {
+					result = result + ", ";
+				}
 			}
 		}
 		return result;

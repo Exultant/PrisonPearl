@@ -1,3 +1,5 @@
+alt_ban_enabled: true
+max_imprisoned_alts: 2
 free_world: world
 free_respawn: true
 free_tppearl: true
