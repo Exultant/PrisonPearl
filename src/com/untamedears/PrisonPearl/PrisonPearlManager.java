@@ -115,8 +115,25 @@ class PrisonPearlManager implements Listener {
 			pearls.deletePearl(pp);
 			return false;
 		}
+		
+		// START OF 'TinieSnipah' EDIT - MORE PEARL TWEAKS
+		
+		ItemStack is = new ItemStack(Material.ENDER_PEARL, 1);// create pearl
+		ItemMeta im = is.getItemMeta();
+		im.setDisplayName(pp.getImprisonedName);// rename pearl to that of imprisoned player
+		ArrayList<String> lore = new ArrayList<String>();
+		lore.add(pp.getImprisonedName + "is held within this pearl");// gives pearl lore that says more info when hovered over
+		im.addEnchant(Enchantment.DURABILITY, 1);// given enchantment effect (durability used because it doesn't affect pearl behaviour)
+		im.setLore(lore);// lore set
+		is.setItemMeta(im);// meta data set
+		pp.getID().getInventory().addItem(is);// given to imprisoner
 
-		inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
+		// Previous line:
+		// inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
+		
+		// Reason for edit: Gives pearl enchantment effect (distinguishable, unstackable) Gives name of prisoner in inventory.
+		
+		// END OF 'TinieSnipah' EDIT - MORE PEARL TWEAKS
 		
 		if (getConfig().getBoolean("prison_resetbed")) {
 			Player imprisoned = Bukkit.getPlayerExact(imprisonedname);
