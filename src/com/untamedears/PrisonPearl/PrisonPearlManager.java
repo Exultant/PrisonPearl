@@ -121,7 +121,7 @@ class PrisonPearlManager implements Listener {
 
 		// START OF 'TinieSnipah' EDIT - MORE PEARL TWEAKS
 
-		ItemStack is = new ItemStack(Material.ENDER_PEARL, 1);// create pearl
+		ItemStack is = new ItemStack(Material.ENDER_PEARL, 1, pp.getID());// create pearl
 		ItemMeta im = is.getItemMeta();
 		im.setDisplayName(pp.getImprisonedName());// rename pearl to that of imprisoned player
 		ArrayList<String> lore = new ArrayList<String>();
@@ -130,10 +130,10 @@ class PrisonPearlManager implements Listener {
 		im.setLore(lore);// lore set
 		is.setItemMeta(im);// meta data set
 		is.removeEnchantment(Enchantment.DURABILITY);
-		pp.getHolderPlayer().getInventory().addItem(is);// given to imprisoner
+		//pp.getHolderPlayer().getInventory().addItem(is);// given to imprisoner
 
 		// Previous line:
-		// inv.setItem(pearlnum, new ItemStack(Material.ENDER_PEARL, 1, pp.getID())); // give it to the imprisoner
+		 inv.setItem(pearlnum, is); // give it to the imprisoner
 
 		// Reason for edit: Gives pearl enchantment effect (distinguishable, unstackable) Gives name of prisoner in inventory.
 
