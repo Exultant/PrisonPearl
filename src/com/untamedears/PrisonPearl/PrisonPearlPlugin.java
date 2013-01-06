@@ -96,10 +96,10 @@ public class PrisonPearlPlugin extends JavaPlugin implements Listener {
 		// shamelessly swiped from bookworm, not sure why there isn't a Bukkit API for this
 		// this causes items to be stacked by their durability value
 		try {
-			Method method = net.minecraft.server.Item.class.getDeclaredMethod("a", boolean.class);
-			if (method.getReturnType() == net.minecraft.server.Item.class) {
+			Method method = net.minecraft.server.v1_4_5.Item.class.getDeclaredMethod("a", boolean.class);
+			if (method.getReturnType() == net.minecraft.server.v1_4_5.Item.class) {
 				method.setAccessible(true);
-				method.invoke(net.minecraft.server.Item.ENDER_PEARL, true);
+				method.invoke(net.minecraft.server.v1_4_5.Item.ENDER_PEARL, true);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
