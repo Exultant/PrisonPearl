@@ -75,12 +75,40 @@ class PrisonPearlCommands implements CommandExecutor {
         } else if (label.equalsIgnoreCase("pptoggleblocks")) {
             return toggleBlocksCmd(sender, args);
         } else if (label.equalsIgnoreCase("ppsetmotd")) {
-            return setMotdCmd(sender, args);
+            return setMotdCmd(sender, args);           
+        } else if (label.equalsIgnoreCase("ppfeed")) {
+			return feedCmd(sender, args, false);
+        } else if (label.equalsIgnoreCase("pprestore")) {
+        	return restoreCmd(sender, args, false);
         }
-
 		return false;
 	}
+	
+	private boolean restoreCmd(CommandSender sender, String args[], boolean any){
+    	if ((sender instanceof Player)) {
+			sender.sendMessage("Must use [[restore at the console");
+			return true;
+		}
+    	if (!args[0].isEmpty()){
+    		sender.sendMessage("Restoring from " + args[0]);
+    		sender.sendMessage(pearls.restorePearls(pearlman, args[0]));
+    	}else{
+    		sender.sendMessage("Restoring from most recent record...");
+    		sender.sendMessage(pearls.restorePearls(pearlman, null));
+    	}
+    	return true;
+	}
 
+    private boolean feedCmd(CommandSender sender, String args[], boolean any) {
+    	if ((sender instanceof Player)) {
+			sender.sendMessage("Must use ppfeed at the console");
+			return true;
+		}
+    	sender.sendMessage("Feeding all pearls: " + pearls.getPearlCount());
+    	sender.sendMessage(pearls.feedPearls(pearlman));
+    	return true;
+    }
+	
     private PrisonPearl setCmd(CommandSender sender, String[] args) {
         PrisonPearl pp;
 
@@ -164,8 +192,8 @@ class PrisonPearlCommands implements CommandExecutor {
 
         if (pp == null) {
 
-            return false;
-        }
+		return false;
+	}
 
         boolean damage = summonman.getSummon(pp.getImprisonedName()).isCanDealDamage();
         summonman.getSummon(pp.getImprisonedName()).setCanDealDamage(!damage);
@@ -213,7 +241,7 @@ class PrisonPearlCommands implements CommandExecutor {
         pp.setMotd(s);
         sender.sendMessage(pp.getImprisonedName() + "'s Message of the Day set to " + s);
         return true;
-    }
+    }    
 
     private boolean locateCmd(CommandSender sender, String args[], boolean any) {
 		String name_is;

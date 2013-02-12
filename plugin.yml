@@ -9,6 +9,10 @@ commands:
       usage: /<command>
       aliases: ppl
   
+   ppfeed:
+      description: Feeds prison pearls
+      usage: /<command>
+      
    pplocateany:
       description: Locates any prison pearl in the world
       usage: /<command> player
@@ -93,6 +97,7 @@ commands:
 
    ppsetmotd:
       description: Sets prisoner's MOTD.
+      
 
 permissions:
    prisonpearl.*:
